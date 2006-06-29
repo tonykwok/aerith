@@ -92,7 +92,7 @@ import java.util.HashMap;
  * <p><code>ShadowFactory</code> is not guaranteed to be thread-safe.</p>
  * 
  * @author Romain Guy <romain.guy@mac.com>
- * @author Sébastien Petrucci <sebastien_petrucci@yahoo.fr>
+ * @author Sï¿½bastien Petrucci <sebastien_petrucci@yahoo.fr>
  */
 
 public class ShadowFactory {
@@ -375,7 +375,7 @@ public class ShadowFactory {
     // basically applies duplicates the picture and applies a size*size kernel
     // in only one pass.
     // the kernel is simulated by an horizontal and a vertical pass
-    // implemented by Sébastien Petrucci
+    // implemented by Sebastien Petrucci
     private BufferedImage createShadowFast(final BufferedImage src) {
         int shadowSize = this.size;
 
