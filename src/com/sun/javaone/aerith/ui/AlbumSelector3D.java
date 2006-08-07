@@ -155,6 +155,8 @@ class AlbumSelector3D extends JPanel {
     }
 
     boolean addAlbum(final Photoset album) {
+        if(album == null)
+            return false;
         try {
             BufferedImage image = album.getPrimaryPhoto().getSmallSquareImage();
             if (image.getWidth() != DISPLAY_WIDTH) {
