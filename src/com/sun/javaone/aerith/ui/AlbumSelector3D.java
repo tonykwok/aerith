@@ -330,6 +330,8 @@ class AlbumSelector3D extends JPanel {
             Composite composite2 = g2text.getComposite();
             g2text.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
                                                            shadowOpacity));
+			g2text.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+									RenderingHints.VALUE_ANTIALIAS_ON);
             g2text.setColor(shadowColor);
             layout.draw(g2text, 6 + shadowOffsetX,
                         layout.getAscent() + shadowOffsetY);
