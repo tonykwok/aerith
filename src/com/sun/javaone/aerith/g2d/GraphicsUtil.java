@@ -23,6 +23,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsEnvironment;
+import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.Transparency;
 import java.awt.image.BufferedImage;
@@ -37,6 +38,7 @@ import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.net.URL;
 import javax.imageio.ImageIO;
+import javax.swing.JComponent;
 
 public class GraphicsUtil {
     private static GraphicsConfiguration configuration = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
@@ -451,4 +453,80 @@ public class GraphicsUtil {
         String colString = Integer.toHexString(c.getRGB() & 0xffffff); 
         return "#000000".substring(0, 7 - colString.length()).concat(colString); 
     }     
+
+    /**
+     * Draws an image on top of a component by doing a 3x3 grid stretch of the image
+     * using the specified insets.
+     */
+    public static void tileStretchPaint(Graphics g, 
+                JComponent comp,
+                BufferedImage img,
+                Insets ins) {
+        
+        int left = ins.left;
+        int right = ins.right;
+        int top = ins.top;
+        int bottom = ins.bottom;
+        
+        // top
+        g.drawImage(img,
+                    0,0,left,top,
+                    0,0,left,top,
+                    null);
+        g.drawImage(img,
+                    left,                 0, 
+                    comp.getWidth() - right, top, 
+                    left,                 0, 
+                    img.getWidth()  - right, top, 
+                    null);
+        g.drawImage(img,
+                    comp.getWidth() - right, 0, 
+                    comp.getWidth(),         top, 
+                    img.getWidth()  - right, 0, 
+                    img.getWidth(),          top, 
+                    null);
+
+        // middle
+        g.drawImage(img,
+                    0,    top, 
+                    left, comp.getHeight()-bottom,
+                    0,    top,   
+                    left, img.getHeight()-bottom,
+                    null);
+        
+        g.drawImage(img,
+                    left,                  top, 
+                    comp.getWidth()-right,      comp.getHeight()-bottom,
+                    left,                  top,   
+                    img.getWidth()-right,  img.getHeight()-bottom,
+                    null);
+         
+        g.drawImage(img,
+                    comp.getWidth()-right,     top, 
+                    comp.getWidth(),           comp.getHeight()-bottom,
+                    img.getWidth()-right, top,   
+                    img.getWidth(),       img.getHeight()-bottom,
+                    null);
+        
+        // bottom
+        g.drawImage(img,
+                    0,comp.getHeight()-bottom, 
+                    left, comp.getHeight(),
+                    0,img.getHeight()-bottom,   
+                    left,img.getHeight(),
+                    null);
+        g.drawImage(img,
+                    left,                    comp.getHeight()-bottom, 
+                    comp.getWidth()-right,        comp.getHeight(),
+                    left,                    img.getHeight()-bottom,   
+                    img.getWidth()-right,    img.getHeight(),
+                    null);
+        g.drawImage(img,
+                    comp.getWidth()-right,     comp.getHeight()-bottom, 
+                    comp.getWidth(),           comp.getHeight(),
+                    img.getWidth()-right, img.getHeight()-bottom,   
+                    img.getWidth(),       img.getHeight(),
+                    null);
+    }
+
 }

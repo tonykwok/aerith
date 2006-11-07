@@ -1,5 +1,6 @@
 package com.sun.javaone.aerith.ui;
 
+import com.sun.javaone.aerith.g2d.GraphicsUtil;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Composite;
@@ -32,7 +33,6 @@ import org.jdesktop.animation.timing.TimingController;
 import org.jdesktop.animation.timing.TimingTarget;
 import org.jdesktop.fuse.InjectedResource;
 import org.jdesktop.fuse.ResourceInjector;
-import org.jdesktop.swingx.color.ColorUtil;
 
 /**
  *
@@ -150,8 +150,7 @@ public class ActionButton extends JButton {
         int width = getWidth() - insets.left - insets.right;
         int height = getHeight() - insets.top - insets.bottom;
         
-        ColorUtil.tileStretchPaint(g2,this,(BufferedImage) getImage(m.isArmed()), sourceInsets);
-        
+        GraphicsUtil.tileStretchPaint(g2,this,(BufferedImage) getImage(m.isArmed()), sourceInsets);
         
         if (ghostValue > 0.0f) {
             g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
