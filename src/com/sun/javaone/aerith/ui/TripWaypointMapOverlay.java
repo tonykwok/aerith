@@ -169,7 +169,6 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
 
     private Animator enterController, exitController;
     private void startRolloverAnimation() {
-        System.out.println("TripWaypointMapOverlay.startRolloverAnimation()");
         if (enterController != null && enterController.isRunning()) {
             return;
         }
@@ -198,7 +197,6 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
     }
 
     private void stopRolloverAnimation() {
-        System.out.println("TripWaypointMapOverlay.stopRolloverAnimation()");
         if (exitController != null && exitController.isRunning()) {
             return;
         }
