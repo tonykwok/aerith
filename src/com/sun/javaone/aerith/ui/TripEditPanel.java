@@ -46,14 +46,9 @@ import com.sun.javaone.aerith.ui.dnd.DragAndDropLock;
 import com.sun.javaone.aerith.ui.dnd.GhostGlassPane;
 import com.sun.javaone.aerith.ui.plaf.AerithScrollbarUI;
 import com.sun.javaone.aerith.ui.plaf.AerithSliderUI;
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
-import org.jdesktop.animation.timing.interpolation.ObjectModifier;
-import org.jdesktop.animation.timing.interpolation.PropertyRange;
+import org.jdesktop.animation.timing.interpolation.PropertySetter;
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.JXPanel;
 import org.jdesktop.swingx.mapviewer.DefaultTileFactory;
@@ -165,8 +160,8 @@ public class TripEditPanel extends javax.swing.JPanel {
     }
 
     private static class FadeAdapter extends MouseAdapter {
-        private TimingController enterController;
-        private TimingController exitController;
+        private Animator enterController;
+        private Animator exitController;
         private JXPanel panel;
         private float originalOpacity;
 
@@ -189,21 +184,18 @@ public class TripEditPanel extends javax.swing.JPanel {
                 exitController.stop();
             }
 
-            Cycle cycle = new Cycle(400, 10);
-            Envelope envelope = new Envelope(1, 0, RepeatBehavior.FORWARD,
-                    EndBehavior.HOLD);
-            PropertyRange fadeRange =
-                    PropertyRange.createPropertyRangeFloat("alpha",
-                    panel.getAlpha(), 0.999999f);
-            enterController = new TimingController(cycle, envelope,
-                    new ObjectModifier(panel, fadeRange));
+            PropertySetter ps = new PropertySetter(panel,"alpha",panel.getAlpha(),0.999999f);
+            enterController = new Animator(400,ps);
+            enterController.setResolution(10);
             enterController.addTarget(new TimingTarget() {
                 public void begin() {
                 }
                 public void end() {
                 }
-                public void timingEvent(long l, long l0, float f) {
+                public void timingEvent(float f) {
                     panel.repaint();
+                }
+                public void repeat(){                    
                 }
             });
             enterController.setAcceleration(0.7f);
@@ -227,21 +219,18 @@ public class TripEditPanel extends javax.swing.JPanel {
                 enterController.stop();
             }
 
-            Cycle cycle = new Cycle(400, 10);
-            Envelope envelope = new Envelope(1, 0, RepeatBehavior.FORWARD,
-                    EndBehavior.HOLD);
-            PropertyRange fadeRange =
-                    PropertyRange.createPropertyRangeFloat("alpha",
-                    panel.getAlpha(), originalOpacity);
-            exitController = new TimingController(cycle, envelope,
-                    new ObjectModifier(panel, fadeRange));
+            PropertySetter ps = new PropertySetter(panel, "alpha", panel.getAlpha(), originalOpacity );
+            exitController = new Animator(400,ps);
+            exitController.setResolution(10);
             exitController.addTarget(new TimingTarget() {
                 public void begin() {
                 }
                 public void end() {
                 }
-                public void timingEvent(long l, long l0, float f) {
+                public void timingEvent(float f) {
                     panel.repaint();
+                }
+                public void repeat(){                    
                 }
             });
             exitController.setAcceleration(0.7f);
@@ -550,12 +539,10 @@ public class TripEditPanel extends javax.swing.JPanel {
 
             final MapOverlay<JXMapViewer> oldOverlay = (MapOverlay<JXMapViewer>) mapViewer.getMapOverlay();
             mapViewer.setMapOverlay(new ZoomingMapOverlay(mapViewer,-1));
-            Cycle cycle = new Cycle(500, 10);
-            Envelope envelope = new Envelope(1, 0, RepeatBehavior.FORWARD, EndBehavior.HOLD);
-            PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("zoomScale",
-                                        mapViewer.getZoomScale(), 2.0f);
-            TimingController enterController = new TimingController(cycle, envelope,
-                    new ObjectModifier(mapViewer, fadeRange));
+
+            PropertySetter ps = new PropertySetter(mapViewer,"zoomScale",mapViewer.getZoomScale(),2.0f);
+            Animator enterController = new Animator(500,ps);
+            enterController.setResolution(10);
             enterController.addTarget(new TimingTarget() {
                 public void begin() {
                 }
@@ -565,8 +552,10 @@ public class TripEditPanel extends javax.swing.JPanel {
                     mapViewer.setMapOverlay(oldOverlay);
                     mapViewer.repaint();
                 }
-                public void timingEvent(long l, long l0, float f) {
+                public void timingEvent(float f) {
                     mapViewer.repaint();
+                }
+                public void repeat(){                    
                 }
             });
             enterController.start();
@@ -625,12 +614,10 @@ public class TripEditPanel extends javax.swing.JPanel {
             //mapViewer.setZoomDirection(+1);
             final MapOverlay<JXMapViewer> oldOverlay = (MapOverlay<JXMapViewer>) mapViewer.getMapOverlay();
             mapViewer.setMapOverlay(new ZoomingMapOverlay(mapViewer,+1));
-            Cycle cycle = new Cycle(500, 10);
-            Envelope envelope = new Envelope(1, 0, RepeatBehavior.FORWARD, EndBehavior.HOLD);
-            PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("zoomScale",
-                                        mapViewer.getZoomScale(), 0.5f);
-            TimingController enterController = new TimingController(cycle, envelope,
-                    new ObjectModifier(mapViewer, fadeRange));
+            
+            PropertySetter ps = new PropertySetter(mapViewer,"zoomScale",mapViewer.getZoomScale(),0.5f);
+            Animator enterController = new Animator(500,ps);
+            enterController.setResolution(10);
             enterController.addTarget(new TimingTarget() {
                 public void begin() {
                 }
@@ -640,8 +627,10 @@ public class TripEditPanel extends javax.swing.JPanel {
                     mapViewer.setMapOverlay(oldOverlay);
                     mapViewer.repaint();
                 }
-                public void timingEvent(long l, long l0, float f) {
+                public void timingEvent(float f) {
                     mapViewer.repaint();
+                }
+                public void repeat(){                    
                 }
             });
             enterController.start();

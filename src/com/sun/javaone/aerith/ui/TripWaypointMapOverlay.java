@@ -24,23 +24,18 @@ import com.sun.javaone.aerith.g2d.AnimationUtil;
 import com.sun.javaone.aerith.g2d.GraphicsUtil;
 import com.sun.javaone.aerith.model.Trip;
 import com.sun.javaone.aerith.ui.dnd.GhostGlassPane;
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
 import org.jdesktop.animation.timing.interpolation.KeyFrames;
 import org.jdesktop.animation.timing.interpolation.KeyValues;
-import org.jdesktop.animation.timing.interpolation.ObjectModifier;
-import org.jdesktop.animation.timing.interpolation.PropertyRange;
+import org.jdesktop.animation.timing.interpolation.PropertySetter;
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.JXPanel;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.jdesktop.swingx.mapviewer.Waypoint;
 import org.jdesktop.swingx.mapviewer.WaypointMapOverlay;
 import org.jdesktop.swingx.mapviewer.WaypointRenderer;
-import org.jdesktop.swingx.mapviewer.animation.KeyValuesGeoPosition;
+import org.jdesktop.swingx.mapviewer.animation.GeoPositionEvaluator;
 
 
 final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer> implements WaypointRenderer {
@@ -79,13 +74,13 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
         return new HashSet<Waypoint>(this.tripEditPanel.getTrip().getWaypoints());
     }
 
-    public TimingController createMapMoveAnimation(GeoPosition newPosition) {
-        Cycle cycle = new Cycle(400, 10);
-        Envelope envelope = new Envelope(1, 0, RepeatBehavior.FORWARD, EndBehavior.HOLD);
-        KeyValues<GeoPosition> keyValues = new KeyValuesGeoPosition(this.tripEditPanel.getMapViewer().getCenterPosition(), newPosition);
+    public Animator createMapMoveAnimation(GeoPosition newPosition) {
+        KeyValues<GeoPosition> keyValues = KeyValues.create(new GeoPositionEvaluator(),this.tripEditPanel.getMapViewer().getCenterPosition(), newPosition);
         KeyFrames keyFrames = new KeyFrames(keyValues);
-        PropertyRange locationRange = new PropertyRange("centerPosition", keyFrames);
-        TimingController mapAnimator = new TimingController(cycle, envelope, new ObjectModifier(this.tripEditPanel.getMapViewer(), locationRange));
+        PropertySetter ps = new PropertySetter(this.tripEditPanel.getMapViewer(),"centerPosition",keyFrames);
+        
+        Animator mapAnimator = new Animator(400,ps);
+        mapAnimator.setResolution(10);
         mapAnimator.setAcceleration(0.7f);
         mapAnimator.setDeceleration(0.3f);
         return mapAnimator;
@@ -106,7 +101,7 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
             final Trip.Waypoint wp = findWaypoint(evt.getPoint());
             if (wp != null) {
                 //animate recentering the map
-                TimingController mapAnimator = createMapMoveAnimation(wp.getPosition());
+                Animator mapAnimator = createMapMoveAnimation(wp.getPosition());
                 mapAnimator.addTarget(new TimingTarget() {
                     public void begin() {}
                     public void end() {
@@ -118,7 +113,8 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
                         tripEditPanel.editContainer.repaint();
                         AnimationUtil.createFadeInAnimation(waypointEditPanel).start();
                     }
-                    public void timingEvent(long l, long l0, float f) {}
+                    public void timingEvent(float f) {}
+                    public void repeat(){}
                 });
                 mapAnimator.start();
             }
@@ -171,8 +167,9 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
         this.selectedFade = selectedFade;
     }
 
-    private TimingController enterController, exitController;
+    private Animator enterController, exitController;
     private void startRolloverAnimation() {
+        System.out.println("TripWaypointMapOverlay.startRolloverAnimation()");
         if (enterController != null && enterController.isRunning()) {
             return;
         }
@@ -180,22 +177,20 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
         if (exitController != null && exitController.isRunning()) {
             exitController.stop();
         }
-        Cycle cycle = new Cycle(400, 10);
-        Envelope envelope = new Envelope(1, 0, RepeatBehavior.FORWARD,
-                EndBehavior.HOLD);
-        PropertyRange fadeRange =
-                PropertyRange.createPropertyRangeFloat("selectedFade",
-                getSelectedFade(), 0.99f);
-        enterController = new TimingController(cycle, envelope,
-                new ObjectModifier(this, fadeRange));
+        
+        PropertySetter ps = new PropertySetter(this,"selectedFade", getSelectedFade(), 0.99f);
+        Animator enterController = new Animator(400,ps);
+        enterController.setRepeatBehavior(Animator.RepeatBehavior.LOOP);
+        enterController.setResolution(10);
         enterController.addTarget(new TimingTarget() {
             public void begin() {
             }
             public void end() {
             }
-            public void timingEvent(long l, long l0, float f) {
+            public void timingEvent(float f) {
                 tripEditPanel.mapViewer.repaint();
             }
+            public void repeat(){}
         });
         enterController.setAcceleration(0.7f);
         enterController.setDeceleration(0.3f);
@@ -203,6 +198,7 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
     }
 
     private void stopRolloverAnimation() {
+        System.out.println("TripWaypointMapOverlay.stopRolloverAnimation()");
         if (exitController != null && exitController.isRunning()) {
             return;
         }
@@ -211,23 +207,20 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
             enterController.stop();
         }
 
-        Cycle cycle = new Cycle(400, 10);
-        Envelope envelope = new Envelope(1, 0, RepeatBehavior.FORWARD,
-                EndBehavior.HOLD);
-        PropertyRange fadeRange =
-                PropertyRange.createPropertyRangeFloat("selectedFade",
-                getSelectedFade(), 0.0f);
-        exitController = new TimingController(cycle, envelope,
-                new ObjectModifier(this, fadeRange));
+        PropertySetter ps = new PropertySetter(this,"selectedFade",getSelectedFade(),0.0f);
+        Animator exitController = new Animator(400,ps);
+        exitController.setResolution(10);
+        exitController.setRepeatBehavior(Animator.RepeatBehavior.LOOP);
         exitController.addTarget(new TimingTarget() {
             public void begin() {
             }
             public void end() {
                 fadeoutWaypoint = null;
             }
-            public void timingEvent(long l, long l0, float f) {
+            public void timingEvent(float f) {
                 tripEditPanel.mapViewer.repaint();
             }
+            public void repeat(){}
         });
         exitController.setAcceleration(0.7f);
         exitController.setDeceleration(0.3f);
@@ -350,18 +343,19 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
     }
 
     private class PhotoImportHandler extends TransferHandler {
-        private TimingController hoverAnimator;
+        private Animator hoverAnimator;
 
         private PhotoImportHandler() {
         }
 
-        private TimingController createAnimator(Component glassPane) {
-            Cycle cycle = new Cycle(300, 10);
-            Envelope envelope = new Envelope(TimingController.INFINITE, 0, RepeatBehavior.REVERSE, EndBehavior.HOLD);
-            KeyFrames keyFrames = new KeyFrames(KeyValues.createKeyValues(new float[] { 1.0f, .85f }));
-            PropertyRange zoomRange = new PropertyRange("zoom", keyFrames);
-            TimingController hoverAnimator = new TimingController(cycle, envelope, new ObjectModifier(
-                    glassPane, zoomRange));
+        private Animator createAnimator(Component glassPane) {
+            KeyFrames keyFrames = new KeyFrames(KeyValues.create(new Float[] { 1.0f, .85f }));
+            PropertySetter ps = new PropertySetter(glassPane, "zoom", keyFrames );
+            
+            Animator hoverAnimator = new Animator(300,ps);
+            hoverAnimator.setResolution(10);
+            hoverAnimator.setRepeatCount(Animator.INFINITE);
+            hoverAnimator.setRepeatBehavior(Animator.RepeatBehavior.REVERSE);
             hoverAnimator.setAcceleration(0.7f);
             hoverAnimator.setDeceleration(0.3f);
             return hoverAnimator;

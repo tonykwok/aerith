@@ -19,14 +19,9 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import com.sun.javaone.aerith.util.Bundles;
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
-import org.jdesktop.animation.timing.interpolation.ObjectModifier;
-import org.jdesktop.animation.timing.interpolation.PropertyRange;
+import org.jdesktop.animation.timing.interpolation.PropertySetter;
 import org.jdesktop.fuse.InjectedResource;
 import org.jdesktop.fuse.ResourceInjector;
 
@@ -35,8 +30,8 @@ public final class WaitOverlay extends JPanel {
     private int iconHeight;
     private int iconWidth;
     private double loadingRotation;
-    private TimingController loadingTimer;
-    private TimingController glowTimer;
+    private Animator loadingTimer;
+    private Animator glowTimer;
     private JComponent clip;
     private float fade = 0.0f;
     private float opacity = 1.0f;
@@ -75,20 +70,44 @@ public final class WaitOverlay extends JPanel {
         if (visible) {
             super.setVisible(visible);
 
-            Cycle cycle = new Cycle(1500, 1000 / 12);
-            Envelope envelope = new Envelope(TimingController.INFINITE,
-                                             0,
-                                             RepeatBehavior.FORWARD,
-                                             EndBehavior.HOLD);
-            loadingTimer = new TimingController(cycle, envelope,
-                                                new LoadingMessenger());
+            //Cycle cycle = new Cycle(1500, 1000 / 12);
+           //Envelope envelope = new Envelope(TimingController.INFINITE,
+                                             //0,
+                                             //RepeatBehavior.FORWARD,
+                                            //EndBehavior.HOLD);
+            //loadingTimer = new TimingController(cycle, envelope,
+            //                                    new LoadingMessenger());
+            
+            //loadingTimer = new Animator(1500, new LoadingMessenger());
+            loadingTimer = new Animator(1500, new LoadingMessenger());
+            loadingTimer.setResolution((int)1000/12);
+            loadingTimer.setRepeatCount(Animator.INFINITE);
+            loadingTimer.setRepeatBehavior(Animator.RepeatBehavior.LOOP);
+            loadingTimer.setEndBehavior(Animator.EndBehavior.HOLD);
             loadingTimer.start();
 
-            cycle = new Cycle(800, 30);
-            envelope = new Envelope(TimingController.INFINITE,
-                                    0,
-                                    RepeatBehavior.REVERSE,
-                                    EndBehavior.RESET);
+            //cycle = new Cycle(800, 30);
+            //envelope = new Envelope(TimingController.INFINITE,
+            //                        0,
+            //                        RepeatBehavior.REVERSE,
+            //                        EndBehavior.RESET);
+            
+            glowTimer = new Animator(800);
+            glowTimer.setRepeatCount(Animator.INFINITE);
+            glowTimer.setEndBehavior(Animator.EndBehavior.RESET);
+            glowTimer.setRepeatBehavior(Animator.RepeatBehavior.REVERSE);
+            glowTimer.setDuration(30);
+            glowTimer.addTarget( new TimingTarget() {
+                public void begin(){}
+                public void end(){}
+                public void repeat(){}
+                public void timingEvent(float f) {
+                    glowFactor = f;
+                    repaint();
+                }
+            });
+            
+            /*
             glowTimer = new TimingController(cycle, envelope,
                                              new TimingTarget() {
                 public void begin() {
@@ -99,7 +118,7 @@ public final class WaitOverlay extends JPanel {
                     glowFactor = f;
                     repaint();
                 }
-            });
+            });*/
             glowTimer.start();
 
             startFadeIn();
@@ -110,28 +129,20 @@ public final class WaitOverlay extends JPanel {
     }
 
     private void startFadeIn() {
-        Cycle cycle = new Cycle(2000, 10);
-        Envelope envelope = new Envelope(1, 0,
-                                         RepeatBehavior.FORWARD,
-                                         EndBehavior.HOLD);
-        PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("fade", 0.0f, 1.0f);
-        TimingController timer = new TimingController(cycle, envelope,
-                                                      new ObjectModifier(this, fadeRange));
+        PropertySetter ps = new PropertySetter(this, "fade", 0.0f, 1.0f );
+        Animator timer = new Animator(2000,ps);
+        timer.setDuration(10);
         timer.setAcceleration(0.7f);
         timer.setDeceleration(0.3f);
         timer.start();
     }
 
-    private void startFadeOut() {
-        Cycle cycle = new Cycle(2000, 10);
-        Envelope envelope = new Envelope(1, 0,
-                                         RepeatBehavior.FORWARD,
-                                         EndBehavior.HOLD);
-        PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("fade", 1.0f, 0.0f);
-        PropertyRange opacityRange = PropertyRange.createPropertyRangeFloat("opacity", 1.0f, 0.0f);
-        TimingController timer = new TimingController(cycle, envelope,
-                                                      new ObjectModifier(this, fadeRange));
-        timer.addTarget(new ObjectModifier(this, opacityRange));
+    private void startFadeOut() {        
+        PropertySetter fadePs = new PropertySetter(this, "fade", 1.0f, 0.0f );
+        PropertySetter opacityPs = new PropertySetter(this, "opacity", 1.0f, 0.0f );
+        Animator timer = new Animator(2000,fadePs);
+        timer.addTarget(opacityPs);
+        timer.setDuration(10);
         timer.setAcceleration(0.7f);
         timer.setDeceleration(0.3f);
         timer.addTarget(new TimingTarget() {
@@ -148,11 +159,9 @@ public final class WaitOverlay extends JPanel {
                 TransitionManager.killOverlay();
             }
         
-            public void begin() {
-            }
-        
-            public void timingEvent(long arg0, long arg1, float arg2) {
-            }
+            public void begin() {}        
+            public void timingEvent(float f) {}            
+            public void repeat(){}
         });
         timer.start();
     }
@@ -265,9 +274,7 @@ public final class WaitOverlay extends JPanel {
     }
     
     private class LoadingMessenger implements TimingTarget {
-        public void timingEvent(long cycleElapsedTime,
-                                long totalElapsedTime,
-                                float fraction) {
+        public void timingEvent(float fraction) {
             loadingRotation = fraction - fraction % (1.0 / 12.0);
 
 //            if (x < 0.0f) {
@@ -279,10 +286,8 @@ public final class WaitOverlay extends JPanel {
 //            }
         }
 
-        public void begin() {
-        }
-
-        public void end() {
-        }
+        public void begin() {}
+        public void end() {}        
+        public void repeat() {}        
     }
 }

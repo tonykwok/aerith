@@ -39,11 +39,7 @@ import com.sun.javaone.aerith.g2d.Reflection;
 import com.sun.javaone.aerith.model.Trip;
 import com.sun.javaone.aerith.util.Bundles;
 import com.sun.javaone.aerith.util.FileUtils;
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
 import org.jdesktop.fuse.InjectedResource;
 import org.jdesktop.fuse.ResourceInjector;
@@ -398,7 +394,7 @@ class LobbyPanel extends JPanel {
         }
 
         private final class GhostHandler extends MouseMotionAdapter {
-            private TimingController timer;
+            private Animator animator;
 
             @Override
             public void mouseMoved(MouseEvent e) {
@@ -406,15 +402,10 @@ class LobbyPanel extends JPanel {
                     return;
                 }
 
-                if (timer != null && timer.isRunning()) {
+                if (animator != null && animator.isRunning()) {
                     return;
                 }
-
-                Cycle cycle = new Cycle(450, 1000 / 30);
-                Envelope envelope = new Envelope(1, 0,
-                                                 RepeatBehavior.FORWARD,
-                                                 EndBehavior.HOLD);
-
+                
                 distance_r = categoryHighlightColor.getRed() -
                     categoryColor.getRed();
                 distance_g = categoryHighlightColor.getGreen() -
@@ -422,8 +413,9 @@ class LobbyPanel extends JPanel {
                 distance_b = categoryHighlightColor.getBlue() -
                     categoryColor.getBlue();
 
-                timer = new TimingController(cycle, envelope, new AnimateGhost());
-                timer.start();
+                animator = new Animator(450, new AnimateGhost());
+                animator.setResolution((int)1000/30);
+                animator.start();
             }
         }
 
@@ -439,9 +431,7 @@ class LobbyPanel extends JPanel {
         }
 
         private final class AnimateGhost implements TimingTarget {
-            public void timingEvent(long cycleElapsedTime,
-                                    long totalElapsedTime,
-                                    float fraction) {
+            public void timingEvent(float fraction) {
                 ghostValue = fraction;
                 repaint();
             }
@@ -454,33 +444,34 @@ class LobbyPanel extends JPanel {
                 ghostValue = 0.0f;
                 repaint();
             }
+            
+            public void repeat() {                
+            }
         }
 
         private final class HiglightHandler extends MouseMotionAdapter implements MouseListener {
-            private TimingController timer;
-            private Cycle cycle = new Cycle(450, 1000 / 30);
-            private Envelope envelope = new Envelope(1, 0,
-                                                     RepeatBehavior.FORWARD,
-                                                     EndBehavior.HOLD);
+            private Animator animator;
 
             @Override
             public void mouseMoved(MouseEvent e) {
                 if (clickable.contains(e.getPoint())) {
                     if (!mouseEnter) {
                         mouseEnter = true;
-                        if (timer != null && timer.isRunning()) {
-                            timer.stop();
+                        if (animator != null && animator.isRunning()) {
+                            animator.stop();
                         }
-                        timer = new TimingController(cycle, envelope, new AnimateHighlight(true));
-                        timer.start();
+                        animator = new Animator(450, new AnimateHighlight(true));
+                        animator.setResolution((int)1000/30);
+                        animator.start();
                     }
                 } else if (mouseEnter) {
                     mouseEnter = false;
-                    if (timer != null && timer.isRunning()) {
-                        timer.stop();
+                    if (animator != null && animator.isRunning()) {
+                        animator.stop();
                     }
-                    timer = new TimingController(cycle, envelope, new AnimateHighlight(false));
-                    timer.start();
+                    animator = new Animator(450, new AnimateHighlight(false));
+                    animator.setResolution((int)1000/30);
+                    animator.start();
                 }
             }
 
@@ -510,9 +501,7 @@ class LobbyPanel extends JPanel {
                 oldValue = newFraction;
             }
 
-            public void timingEvent(long cycleElapsedTime,
-                                    long totalElapsedTime,
-                                    float fraction) {
+            public void timingEvent(float fraction) {
                 newFraction = oldValue + fraction * (forward ? 1.0f : -1.0f);
 
                 if (newFraction > 1.0f) {
@@ -532,6 +521,9 @@ class LobbyPanel extends JPanel {
             }
 
             public void end() {
+            }
+            
+            public void repeat(){
             }
         }
     }

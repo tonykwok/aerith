@@ -37,14 +37,10 @@ import com.aetrion.flickr.photosets.Photoset;
 import com.sun.javaone.aerith.g2d.ShadowFactory;
 import com.sun.javaone.aerith.g2d.GraphicsUtil;
 import com.sun.javaone.aerith.util.Bundles;
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
-import org.jdesktop.animation.timing.interpolation.ObjectModifier;
-import org.jdesktop.animation.timing.interpolation.PropertyRange;
+import org.jdesktop.animation.timing.interpolation.PropertySetter;
+
 import org.jdesktop.fuse.InjectedResource;
 import org.jdesktop.fuse.ResourceInjector;
 import org.jdesktop.swingx.JXPanel;
@@ -369,7 +365,7 @@ public class AlbumSelector extends JPanel {
         private ShadowFactory factory;
         private Screenshot currentScreenshot;
         private JXPanel head, description;
-        private TimingController timer = null;
+        private Animator animator = null;
 
         private AlbumDetails() {
             setOpaque(false);
@@ -431,20 +427,18 @@ public class AlbumSelector extends JPanel {
         }
 
         private void startFadeOut(final Runnable action) {
-            if (timer != null && timer.isRunning()) {
-                timer.stop();
+            if (animator != null && animator.isRunning()) {
+                animator.stop();
             }
 
-            Cycle cycle = new Cycle(400, 10);
-            Envelope envelope = new Envelope(1, 0,
-                                             RepeatBehavior.FORWARD,
-                                             EndBehavior.HOLD);
-            //PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("fade", 1.0f, 0.0f);
-            PropertyRange alphaRange = PropertyRange.createPropertyRangeFloat("alpha", 1.0f, 0.01f);
-            timer = new TimingController(cycle, envelope,
-                                         new ObjectModifier(head, alphaRange));
-            timer.addTarget(new ObjectModifier(description, alphaRange));
-            timer.addTarget(new TimingTarget() {
+            PropertySetter headPs = new PropertySetter(head, "alpha", 1.0f, 0.1f );
+            PropertySetter descriptionPs = new PropertySetter( description, "alpha", 1.0f, 0.1f );
+                        
+            animator = new Animator(400);
+            animator.setResolution(10);
+            animator.addTarget(headPs);
+            animator.addTarget(descriptionPs);
+            animator.addTarget(new TimingTarget() {
                 public void end() {
                     action.run();
                     startFadeIn();
@@ -453,30 +447,33 @@ public class AlbumSelector extends JPanel {
                 public void begin() {
                 }
 
-                public void timingEvent(long arg0, long arg1, float arg2) {
+                public void timingEvent(float f) {
+                }
+                
+                public void repeat() {                    
                 }
             });
-            timer.setAcceleration(0.7f);
-            timer.setDeceleration(0.3f);
-            timer.start();
+            animator.setAcceleration(0.7f);
+            animator.setDeceleration(0.3f);
+            animator.start();
         }
 
         private void startFadeIn() {
-            if (timer != null && timer.isRunning()) {
-                timer.stop();
+            if (animator != null && animator.isRunning()) {
+                animator.stop();
             }
 
-            Cycle cycle = new Cycle(400, 10);
-            Envelope envelope = new Envelope(1, 0,
-                                             RepeatBehavior.FORWARD,
-                                             EndBehavior.HOLD);
-            PropertyRange alphaRange = PropertyRange.createPropertyRangeFloat("alpha", 0.01f, 1.0f);
-            timer = new TimingController(cycle, envelope,
-                                         new ObjectModifier(head, alphaRange));
-            timer.addTarget(new ObjectModifier(description, alphaRange));
-            timer.setAcceleration(0.7f);
-            timer.setDeceleration(0.3f);
-            timer.start();
+            PropertySetter headPs = new PropertySetter(head, "alpha", 0.1f, 1.0f );
+            PropertySetter descriptionPs = new PropertySetter( description, "alpha", 0.1f, 1.0f );
+                        
+            animator = new Animator(400);
+            animator.setResolution(10);
+            animator.addTarget(headPs);
+            animator.addTarget(descriptionPs);
+
+            animator.setAcceleration(0.7f);
+            animator.setDeceleration(0.3f);
+            animator.start();
         }
 
         private JComponent buildButtons() {
@@ -703,7 +700,7 @@ public class AlbumSelector extends JPanel {
             private float fade = 0.0f;
             private Image image = null;
             private String text;
-            private TimingController timer;
+            private Animator animator;
 
             private Screenshot(URL imageUrl) {
                 this.text = Bundles.getMessage(getClass(), "TXT_LoadingPicture");
@@ -752,37 +749,29 @@ public class AlbumSelector extends JPanel {
             }
 
             private void startFadeIn() {
-                if (timer != null && timer.isRunning()) {
-                    timer.stop();
+                if (animator != null && animator.isRunning()) {
+                    animator.stop();
                 }
-
-                Cycle cycle = new Cycle(500, 10);
-                Envelope envelope = new Envelope(1, 0,
-                                                 RepeatBehavior.FORWARD,
-                                                 EndBehavior.HOLD);
-                PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("fade", fade, 1.0f);
-                timer = new TimingController(cycle, envelope,
-                                             new ObjectModifier(Screenshot.this, fadeRange));
-                timer.setAcceleration(0.7f);
-                timer.setDeceleration(0.3f);
-                timer.start();
+                
+                PropertySetter ps = new PropertySetter(this, "fade", 0.0f, 1.0f );          
+                animator = new Animator(500,ps);
+                animator.setResolution(10);
+                animator.setAcceleration(0.7f);
+                animator.setDeceleration(0.3f);
+                animator.start();
             }
 
             private void startFadeOut() {
-                if (timer != null && timer.isRunning()) {
-                    timer.stop();
+                if (animator != null && animator.isRunning()) {
+                    animator.stop();
                 }
 
-                Cycle cycle = new Cycle(500, 10);
-                Envelope envelope = new Envelope(1, 0,
-                                                 RepeatBehavior.FORWARD,
-                                                 EndBehavior.HOLD);
-                PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("fade", fade, 0.0f);
-                timer = new TimingController(cycle, envelope,
-                                             new ObjectModifier(Screenshot.this, fadeRange));
-                timer.setAcceleration(0.7f);
-                timer.setDeceleration(0.3f);
-                timer.start();
+                PropertySetter ps = new PropertySetter(this, "fade", 1.0f, 0.0f );          
+                animator = new Animator(500,ps);
+                animator.setResolution(10);
+                animator.setAcceleration(0.7f);
+                animator.setDeceleration(0.3f);
+                animator.start();
             }
 
             public void setFade(float fade) {

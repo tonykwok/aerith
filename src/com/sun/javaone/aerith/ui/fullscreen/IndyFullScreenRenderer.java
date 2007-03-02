@@ -32,21 +32,18 @@ import com.sun.javaone.aerith.model.Trip;
 import com.sun.javaone.aerith.ui.PhotoWrapper;
 import com.sun.javaone.aerith.ui.music.MusicPlayer;
 import com.sun.javaone.aerith.util.FileUtils;
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
-import org.jdesktop.animation.timing.TimingEvent;
-import org.jdesktop.animation.timing.TimingListener;
+import javazoom.jl.decoder.JavaLayerException;
+import org.jdesktop.animation.timing.Animator;
+import org.jdesktop.animation.timing.Animator.EndBehavior;
+import org.jdesktop.animation.timing.Animator.RepeatBehavior;
+import org.jdesktop.animation.timing.TimingTarget;
+import org.jdesktop.animation.timing.interpolation.Evaluator;
 import org.jdesktop.animation.timing.interpolation.KeyFrames;
-import org.jdesktop.animation.timing.interpolation.KeySplines;
 import org.jdesktop.animation.timing.interpolation.KeyTimes;
 import org.jdesktop.animation.timing.interpolation.KeyValues;
-import org.jdesktop.animation.timing.interpolation.ObjectModifier;
-import org.jdesktop.animation.timing.interpolation.PropertyRange;
-import org.jdesktop.animation.timing.interpolation.Spline;
-import javazoom.jl.decoder.JavaLayerException;
+import org.jdesktop.animation.timing.interpolation.LinearInterpolator;
+import org.jdesktop.animation.timing.interpolation.PropertySetter;
+import org.jdesktop.animation.timing.interpolation.SplineInterpolator;
 import org.jdesktop.swingx.JXMapViewer;
 
 public class IndyFullScreenRenderer implements FullScreenRenderer {
@@ -61,10 +58,10 @@ public class IndyFullScreenRenderer implements FullScreenRenderer {
     private MPAAPanel mpaaPanel;
     private double[] lengths;
     private MusicPlayer player;
-    private TimingController mapTimer;
-    private TimingController photoTimer;
-    private TimingController introductionTimer;
-    private TimingController mpaaTimer;
+    private Animator mapTimer;
+    private Animator photoTimer;
+    private Animator introductionTimer;
+    private Animator mpaaTimer;
     private Thread loadingThread;
     private List<BufferedImage> photos;
     private boolean introPassed = false;
@@ -350,19 +347,15 @@ public class IndyFullScreenRenderer implements FullScreenRenderer {
     }
 
     private void startIntro() {
-        Cycle cycle = new Cycle(2000, 12);
-        Envelope envelope = new Envelope(1, 100,
-                                         RepeatBehavior.FORWARD,
-                                         EndBehavior.HOLD);
-        PropertyRange zoomRange = PropertyRange.createPropertyRangeFloat(
-                "zoomLevel", 1.0f, 0.25f);
-        PropertyRange opacityRange = PropertyRange.createPropertyRangeFloat(
-                "opacity", 1.0f, 0.0f);
-        introductionTimer = new TimingController(cycle, envelope,
-                                                 new ObjectModifier(this,
-                                                                    zoomRange));
-        introductionTimer.setAcceleration(0.7f);
-        introductionTimer.addTarget(new ObjectModifier(this, opacityRange));
+        
+        PropertySetter zoomPs = new PropertySetter(this,"zoomLevel", 1.0f, 0.25f );
+        PropertySetter opacityPs = new PropertySetter(this,"opacity", 1.0f, 0.0f );
+        
+        introductionTimer = new Animator(2000,zoomPs);
+        introductionTimer.addTarget(opacityPs);
+        introductionTimer.setDuration(12);
+        
+        /*
         introductionTimer.addTimingListener(new TimingListener() {
             public void timerStarted(TimingEvent timingEvent) {
                 paintMPAA = true;
@@ -375,16 +368,70 @@ public class IndyFullScreenRenderer implements FullScreenRenderer {
 
             public void timerRepeated(TimingEvent timingEvent) {
             }
-        });
+        });*/
+        introductionTimer.addTarget( new TimingTarget() {
+            public void timingEvent(float f) {}
+
+            public void begin() {
+                paintMPAA = true;
+            }
+
+            public void end() {
+                screenWentAway = true;
+                startMPAATimer();
+            }
+
+            public void repeat() {
+            }
+            
+        } );
+        
+        introductionTimer.setAcceleration(0.7f);
         introductionTimer.start();
     }
 
     private void startMPAATimer() {
-        Cycle c = new Cycle(1000, 12);
-        Envelope e = new Envelope(1, 0, RepeatBehavior.FORWARD, EndBehavior.HOLD);
-        ObjectModifier om = new ObjectModifier(mpaaPanel, PropertyRange.createPropertyRangeFloat("alpha", 0.0f, 1.0f));
-        mpaaTimer = new TimingController(c, e, om);
-        mpaaTimer.setAcceleration(.2f);
+        //Cycle c = new Cycle(1000, 12);
+        //Envelope e = new Envelope(1, 0, RepeatBehavior.FORWARD, EndBehavior.HOLD);
+        //ObjectModifier om = new ObjectModifier(mpaaPanel, PropertyRange.createPropertyRangeFloat("alpha", 0.0f, 1.0f));
+        //mpaaTimer = new TimingController(c, e, om);
+        PropertySetter ps = new PropertySetter(mpaaPanel, "alpha", 0.0f, 1.0f);
+        mpaaTimer = new Animator(1000,ps);
+        mpaaTimer.setDuration(12);
+        mpaaTimer.setAcceleration(0.2f);
+        mpaaTimer.addTarget( new TimingTarget(){
+            public void timingEvent(float f) {}
+
+            public void begin() {}
+
+            public void repeat() {}
+            public void end() {
+                new Thread(new Runnable() {
+                    public void run() {
+                        try {
+                            loadingThread.join();
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
+                        new Thread(new Runnable() {
+                            public void run() {
+                                try {
+                                    player.play();
+                                } catch (JavaLayerException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }, "Music Theme").start();
+                        indyMapPanel.setOffset(points[0]);
+                        paintMap = true;
+
+                        startMPAATimer2();
+                    }
+                }, "Pictures Join Point").start();
+            }
+            
+        });
+        /*
         mpaaTimer.addTimingListener(new TimingListener() {
             public void timerRepeated(TimingEvent timingEvent) {
             }
@@ -417,15 +464,32 @@ public class IndyFullScreenRenderer implements FullScreenRenderer {
                 }, "Pictures Join Point").start();
             }
         });
+         */
         mpaaTimer.start();
     }
 
     private void startMPAATimer2() {
-        Cycle c = new Cycle(1000, 12);
-        Envelope e = new Envelope(1, 0, RepeatBehavior.FORWARD, EndBehavior.HOLD);
-        ObjectModifier om = new ObjectModifier(mpaaPanel, PropertyRange.createPropertyRangeFloat("alpha", 1.0f, 0.0f));
-        mpaaTimer = new TimingController(c, e, om);
+        //Cycle c = new Cycle(1000, 12);
+        //Envelope e = new Envelope(1, 0, RepeatBehavior.FORWARD, EndBehavior.HOLD);
+        //ObjectModifier om = new ObjectModifier(mpaaPanel, PropertyRange.createPropertyRangeFloat("alpha", 1.0f, 0.0f));
+        //mpaaTimer = new TimingController(c, e, om);
+        PropertySetter ps = new PropertySetter(mpaaPanel, "alpha", 1.0f, 0.0f );
+        mpaaTimer = new Animator(1000,ps);
+        mpaaTimer.setDuration(12);
         mpaaTimer.setAcceleration(.2f);
+        mpaaTimer.addTarget( new TimingTarget() {
+            public void begin() {
+            }
+            public void end() {
+                startMapTimer();
+                paintMPAA = false;
+            }
+            public void repeat() {
+            }
+            public void timingEvent(float f) {
+            }
+        });
+        /*
         mpaaTimer.addTimingListener(new TimingListener() {
             public void timerRepeated(TimingEvent timingEvent) {
             }
@@ -437,12 +501,13 @@ public class IndyFullScreenRenderer implements FullScreenRenderer {
                 startMapTimer();
                 paintMPAA = false;
             }
-        });
+        });*/
         mpaaTimer.start();
     }
 
     private void startMapTimer() {
         // 287000
+        /*
         Cycle c = new Cycle(287000, 12);
         Envelope e = new Envelope(1, 0, RepeatBehavior.FORWARD, EndBehavior.HOLD);
         KeyValues<Point2D> values = new KeyValuesPoint2D(points);
@@ -461,17 +526,35 @@ public class IndyFullScreenRenderer implements FullScreenRenderer {
 
             public void timerRepeated(TimingEvent timingEvent) {
             }
+        });*/       
+        KeyValues<Point2D> values = KeyValues.create(points);
+        PropertySetter ps = new PropertySetter(indyMapPanel,"offset", new KeyFrames(values, calculateKeyTimes(lengths), LinearInterpolator.getInstance()));
+        mapTimer = new Animator(287000,ps);
+        mapTimer.setResolution(12);
+        mapTimer.addTarget( new TimingTarget() {
+            public void begin() {
+            }
+            public void end() {
+                player.stop();
+                startOutro();
+            }
+            public void repeat() {
+            }
+            public void timingEvent(float f) {
+            }
         });
         mapTimer.start();
 
-        //fade the image in, fade the image out. So, two cycles per image
+        /*
+        fade the image in, fade the image out. So, two cycles per image
         c = new Cycle(287000/(photos.size()), 30);
         e = new Envelope(photos.size(), 0, Envelope.RepeatBehavior.FORWARD, Envelope.EndBehavior.RESET);
+        
         //noinspection unchecked
-        KeyValues<Float> alphaValues = KeyValues.createKeyValues(new float[]{.5f, .5f, 0.0f});
+        KeyValues<Float> alphaValues = KeyValues.create(new float[]{.5f, .5f, 0.0f});
 
         KeySplines splines = new KeySplines(new Spline(1, 0, 1, 0), new Spline(1, 0, 1, 0));
-        om = new ObjectModifier(indyMapPanel,
+        //om = new ObjectModifier(indyMapPanel,
                                 new PropertyRange("currentPhotoAlpha", new KeyFrames(alphaValues, splines, new KeyTimes(0, 0.7f, 1), KeyFrames.InterpolationType.NONLINEAR)));
 
         photoTimer = new TimingController(c, e, om);
@@ -488,10 +571,31 @@ public class IndyFullScreenRenderer implements FullScreenRenderer {
             public void timerStopped(TimingEvent timingEvent) {
             }
         });
+        */
+        KeyValues<Float> alphaValues = KeyValues.create(new Float[]{.5f, .5f, 0.0f});
+        ps = new PropertySetter(indyMapPanel, "currentPhotoAlpha", new KeyFrames(alphaValues, new KeyTimes(0, 0.7f, 1), new SplineInterpolator(1.0f,0.0f,1.0f,0.0f)));
+        photoTimer = new Animator((int)(287000/photos.size()));
+        photoTimer.setEndBehavior(Animator.EndBehavior.RESET);
+        photoTimer.setRepeatCount(photos.size());
+        photoTimer.setRepeatBehavior(Animator.RepeatBehavior.LOOP);
+        photoTimer.setDuration(30);
+        photoTimer.addTarget( new TimingTarget() {
+            public void begin() {
+                introPassed = true;
+            }            
+            public void end() {
+            }
+            public void repeat() {
+                indyMapPanel.setCurrentPhoto(indyMapPanel.getCurrentPhoto()+1);
+            }
+            public void timingEvent(float f) {
+            }
+        });
         photoTimer.start();
     }
 
     private void startOutro() {
+        /*
         Cycle cycle = new Cycle(2000, 12);
         Envelope envelope = new Envelope(1, 0,
                                          RepeatBehavior.FORWARD,
@@ -527,8 +631,37 @@ public class IndyFullScreenRenderer implements FullScreenRenderer {
 
             public void timerRepeated(TimingEvent timingEvent) {
             }
+        });*/
+        PropertySetter zoomPs = new PropertySetter(this, "zoomLevel", 0.25f, 1.0f );
+        PropertySetter opacityPs = new PropertySetter(this, "opacity", 0.0f, 1.0f );
+        Animator animator = new Animator(2000,zoomPs);
+        animator.addTarget(opacityPs);
+        animator.setDuration(12);
+        animator.setAcceleration(0.7f);
+        animator.addTarget( new TimingTarget() {
+            public void begin() {
+                screenWentAway = false;
+            }
+            public void end() {
+                new Thread(new Runnable() {
+                    public void run() {
+                        try {
+                            Thread.sleep(300);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        screenWentAway = true;
+                        isDone = true;
+                    }
+                }, "Outro End").start();
+            }
+            public void repeat() {
+            }
+            public void timingEvent(float f) {
+            }
         });
-        timer.start();
+        
+        animator.start();
     }
 
     private static double[] calculatePathLengths(Point2D[] points) {

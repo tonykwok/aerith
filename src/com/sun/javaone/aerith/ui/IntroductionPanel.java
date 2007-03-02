@@ -14,16 +14,12 @@ import javax.swing.SwingUtilities;
 
 import com.sun.javaone.aerith.g2d.GraphicsUtil;
 import java.awt.LinearGradientPaint;
-//import com.sun.javaone.aerith.g2d.LinearGradientPaint;
 import com.sun.javaone.aerith.model.DataType;
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
+import org.jdesktop.animation.timing.Animator.EndBehavior;
+import org.jdesktop.animation.timing.Animator.RepeatBehavior;
 import org.jdesktop.animation.timing.TimingTarget;
-import org.jdesktop.animation.timing.interpolation.ObjectModifier;
-import org.jdesktop.animation.timing.interpolation.PropertyRange;
+import org.jdesktop.animation.timing.interpolation.PropertySetter;
 import org.jdesktop.fuse.InjectedResource;
 import org.jdesktop.fuse.ResourceInjector;
 
@@ -53,14 +49,11 @@ public class IntroductionPanel extends JComponent {
     }
 
     private void startFadeIn() {
-        Cycle cycle = new Cycle(2000, 10);
-        Envelope envelope = new Envelope(1, 500,
-                                         RepeatBehavior.FORWARD,
-                                         EndBehavior.HOLD);
-        PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("fade", 0.0f, 1.0f);
-        TimingController timer = new TimingController(cycle, envelope,
-                                                      new ObjectModifier(this, fadeRange));
-        timer.addTarget(new TimingTarget() {
+        
+        PropertySetter ps = new PropertySetter( this, "fade", 0.0f, 1.0f );        
+        Animator animator = new Animator(2000, ps );
+        animator.setResolution(10);
+        animator.addTarget(new TimingTarget() {
             public void end() {
                 startFadeOut();
             }
@@ -68,23 +61,22 @@ public class IntroductionPanel extends JComponent {
             public void begin() {
             }
 
-            public void timingEvent(long arg0, long arg1, float arg2) {
+            public void timingEvent(float f) {
+            }
+            
+            public void repeat() {                
             }
         });
-        timer.setAcceleration(0.7f);
-        timer.setDeceleration(0.3f);
-        timer.start();
+        animator.setAcceleration(0.7f);
+        animator.setDeceleration(0.3f);
+        animator.start();
     }
 
     private void startFadeOut() {
-        Cycle cycle = new Cycle(1200, 10);
-        Envelope envelope = new Envelope(1, 1500,
-                                         RepeatBehavior.FORWARD,
-                                         EndBehavior.HOLD);
-        PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("fadeOut", 0.0f, 1.0f);
-        TimingController timer = new TimingController(cycle, envelope,
-                                                      new ObjectModifier(this, fadeRange));
-        timer.addTarget(new TimingTarget() {
+        PropertySetter ps = new PropertySetter( this, "fadeOut", 0.0f, 1.0f );
+        Animator animator = new Animator(1200, ps );
+        animator.setResolution(10);
+        animator.addTarget(new TimingTarget() {
             public void end() {
                 //TransitionManager.showWaitOverlay();
                 TransitionManager.showLoginOverlay();
@@ -93,12 +85,15 @@ public class IntroductionPanel extends JComponent {
             public void begin() {
             }
         
-            public void timingEvent(long arg0, long arg1, float arg2) {
+            public void timingEvent(float f) {
+            }
+            
+            public void repeat() {                
             }
         });
-        timer.setAcceleration(0.7f);
-        timer.setDeceleration(0.3f);
-        timer.start();
+        animator.setAcceleration(0.7f);
+        animator.setDeceleration(0.3f);
+        animator.start();
     }
     
     public void setFade(float fade) {
@@ -110,8 +105,8 @@ public class IntroductionPanel extends JComponent {
         return fade;
     }
     
-    public void setFadeOut(float fadeOut) {
-        this.fadeOut  = fadeOut;
+    public void setFadeOut(float fade) {
+        this.fadeOut  = fade;
         repaint();
     }
 

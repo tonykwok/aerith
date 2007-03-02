@@ -27,8 +27,9 @@ import javax.swing.TransferHandler;
 
 import com.sun.javaone.aerith.g2d.AnimationUtil;
 import com.sun.javaone.aerith.model.Trip;
+import com.sun.javaone.aerith.ui.GradientViewport.Orientation;
 import com.sun.javaone.aerith.ui.plaf.AerithScrollbarUI;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
 import org.jdesktop.swingx.JXPanel;
 
@@ -248,14 +249,15 @@ public class WaypointEditPanel extends JXPanel {
         waypoint.setName(name.getText());
         waypoint.setTitle(title.getText());
         waypoint.setSummary(summary.getText());
-        TimingController fadeOut = AnimationUtil.createFadeOutAnimation(this);
+        Animator fadeOut = AnimationUtil.createFadeOutAnimation(this);
         fadeOut.addTarget(new TimingTarget() {
             public void begin() {}
             public void end() {
                 parent.remove(WaypointEditPanel.this);
                 parent.repaint();
             }
-            public void timingEvent(long l, long l0, float f) {}
+            public void timingEvent(float f) {}
+            public void repeat(){}
         });
         fadeOut.start();
     }//GEN-LAST:event_jButton1ActionPerformed

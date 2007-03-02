@@ -27,14 +27,12 @@ import javax.swing.JPanel;
 import com.sun.javaone.aerith.g2d.GraphicsUtil;
 import com.sun.javaone.aerith.model.Trip;
 import com.sun.javaone.aerith.util.FileUtils;
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.interpolation.KeyFrames;
 import org.jdesktop.animation.timing.interpolation.KeyTimes;
 import org.jdesktop.animation.timing.interpolation.KeyValues;
-import org.jdesktop.animation.timing.interpolation.ObjectModifier;
-import org.jdesktop.animation.timing.interpolation.PropertyRange;
+import org.jdesktop.animation.timing.interpolation.LinearInterpolator;
+import org.jdesktop.animation.timing.interpolation.PropertySetter;
 import org.jdesktop.swingx.JXMapViewer;
 
 /**
@@ -67,6 +65,7 @@ public class PathPainter {
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setSize(new Dimension(1024, 768));
             frame.setVisible(true);
+            /*
             Cycle c = new Cycle(300000, 30);
             Envelope e = new Envelope(1, 0, Envelope.RepeatBehavior.FORWARD, Envelope.EndBehavior.HOLD);
             KeyValues<Point2D> values = new KeyValuesPoint2D(points);
@@ -74,7 +73,13 @@ public class PathPainter {
                                                    new PropertyRange("offset",
                                                                      new KeyFrames(values, calculateKeyTimes(lengths), KeyFrames.InterpolationType.LINEAR)));
             TimingController timer = new TimingController(c, e, om);
+            */
+            KeyValues<Point2D> values = KeyValues.create(points);
+            PropertySetter ps = new PropertySetter(panel,"offset",new KeyFrames(values,calculateKeyTimes(lengths),LinearInterpolator.getInstance()));
+            Animator timer = new Animator(300000,ps);
+            timer.setDuration(30);
             timer.start();
+            
 
         } catch (Exception e) {
             e.printStackTrace();

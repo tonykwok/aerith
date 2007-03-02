@@ -24,12 +24,8 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.basic.BasicButtonUI;
+import org.jdesktop.animation.timing.Animator;
 
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
 import org.jdesktop.animation.timing.TimingTarget;
 import org.jdesktop.fuse.InjectedResource;
 import org.jdesktop.fuse.ResourceInjector;
@@ -37,6 +33,7 @@ import org.jdesktop.fuse.ResourceInjector;
 /**
  *
  * @author rbair
+ * @author bpasson
  */
 public class ActionButton extends JButton {
 
@@ -198,51 +195,40 @@ public class ActionButton extends JButton {
     }
     
     private final class HiglightHandler extends MouseAdapter {
-        private TimingController timer;
-        private Cycle cycle = new Cycle(300, 1000 / 30);
-        private Envelope envelope = new Envelope(1, 0,
-                RepeatBehavior.FORWARD,
-                EndBehavior.HOLD);
+        private Animator animator;
         
         @Override
         public void mouseEntered(MouseEvent e) {
-            if (timer != null && timer.isRunning()) {
-                timer.stop();
+            if (animator != null && animator.isRunning()) {
+                animator.stop();
             }
-            timer = new TimingController(cycle, envelope, new AnimateGhost(true));
-            timer.start();
+            animator = new Animator(300, new AnimateGhost());
+            animator.setDirection(Animator.Direction.FORWARD);
+            animator.setEndBehavior(Animator.EndBehavior.HOLD);
+            animator.setResolution((int)1000/30);
+            animator.start();
         }
         
         @Override
         public void mouseExited(MouseEvent e) {
-            if (timer != null && timer.isRunning()) {
-                timer.stop();
+            if (animator != null && animator.isRunning()) {
+                animator.stop();
             }
-            timer = new TimingController(cycle, envelope, new AnimateGhost(false));
-            timer.start();
+            animator = new Animator(300, new AnimateGhost());
+            animator.setInitialFraction(1.0f);
+            animator.setDirection(Animator.Direction.BACKWARD);
+            animator.setEndBehavior(Animator.EndBehavior.HOLD);
+            animator.setResolution((int)1000/30);
+            animator.start();
         }
     }
     
-    private final class AnimateGhost implements TimingTarget {
-        private boolean forward;
-        private float oldValue;
-        
-        AnimateGhost(boolean forward) {
-            this.forward = forward;
-            oldValue = ghostValue;
+    private final class AnimateGhost implements TimingTarget {        
+        AnimateGhost() {
         }
         
-        public void timingEvent(long cycleElapsedTime,
-                long totalElapsedTime,
-                float fraction) {
-            ghostValue = oldValue + fraction * (forward ? 1.0f : -1.0f);
-            
-            if (ghostValue > 1.0f) {
-                ghostValue = 1.0f;
-            } else if (ghostValue < 0.0f) {
-                ghostValue = 0.0f;
-            }
-            
+        public void timingEvent(float fraction) {
+            ghostValue = fraction;            
             repaint();
         }
         
@@ -250,6 +236,9 @@ public class ActionButton extends JButton {
         }
         
         public void end() {
+        }
+        
+        public void repeat() {            
         }
     }
 }

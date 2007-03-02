@@ -9,7 +9,7 @@ import java.awt.image.BufferedImage;
 import javax.swing.JComponent;
 
 import com.sun.animation.effects.ComponentState;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
 
 /**
@@ -29,6 +29,7 @@ import org.jdesktop.animation.timing.TimingTarget;
  *         standardize on JComponent?
  *
  * @author Chet Haase
+ * @author bpasson
  */
 public class ScreenTransition implements TimingTarget {
     
@@ -114,9 +115,9 @@ public class ScreenTransition implements TimingTarget {
     private Component savedGlassPane;
     
     /**
-     * Timing engine for the transition animation.
+     * Animator for the transition animation.
      */
-    private TimingController timingController;
+    private Animator animator;
 
     /**
      * Constructor for ScreenTransition.  The application must supply the
@@ -169,8 +170,7 @@ public class ScreenTransition implements TimingTarget {
      * animation fraction in the AnimationManager and then force a repaint,
      * which will force the current transition state to be rendered.
      */
-    public void timingEvent(long cycleTime, long envelopeTime,
-                            float elapsedFraction)
+    public void timingEvent(float elapsedFraction)
     {
         Graphics2D gImg = (Graphics2D)transitionImage.getGraphics();
 
@@ -201,7 +201,7 @@ public class ScreenTransition implements TimingTarget {
         animationLayer.setVisible(false);
         containerLayer.setVisible(true);
 	containerLayer.repaint();
-        timingController = null;
+        animator = null;
         transitionTarget.transitionComplete();
     }
 
@@ -226,12 +226,12 @@ public class ScreenTransition implements TimingTarget {
      * @param transitionTimeMS The length of this transition in milliseconds
      */
     public void startTransition(int transitionTimeMS) {
-        if (isTransitioning() && timingController != null) {
+        if (isTransitioning() && animator != null) {
             // REMIND: Might want something more robust here, such as
             // putting the application into a state representative of the
             // current transition, rather than just jumping to the end state
             // of the transition
-            timingController.stop();
+            animator.stop();
         }
         
 	// Reset the AnimationManager (this releases all previous transition
@@ -316,11 +316,14 @@ public class ScreenTransition implements TimingTarget {
         
         // workaround: need glass pane to reflect initial contents when we
         // exit this function to avoid flash of blank container
-        timingEvent(0, 0, 0);
+        timingEvent(0);
         
         // Create the TimingController that will run the animation
-	timingController = new TimingController(transitionTimeMS, this);
-	timingController.start();
+	animator = new Animator(transitionTimeMS, this);
+	animator.start();
+    }
+
+    public void repeat() {
     }
 }
 
