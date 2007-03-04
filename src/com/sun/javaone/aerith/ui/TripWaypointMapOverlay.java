@@ -178,7 +178,7 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
         }
         
         PropertySetter ps = new PropertySetter(this,"selectedFade", getSelectedFade(), 0.99f);
-        Animator enterController = new Animator(400,ps);
+        enterController = new Animator(400,ps);
         enterController.setRepeatBehavior(Animator.RepeatBehavior.LOOP);
         enterController.setResolution(10);
         enterController.addTarget(new TimingTarget() {
@@ -200,13 +200,13 @@ final public class TripWaypointMapOverlay extends WaypointMapOverlay<JXMapViewer
         if (exitController != null && exitController.isRunning()) {
             return;
         }
-
+        
         if (enterController != null && enterController.isRunning()) {
             enterController.stop();
         }
 
         PropertySetter ps = new PropertySetter(this,"selectedFade",getSelectedFade(),0.0f);
-        Animator exitController = new Animator(400,ps);
+        exitController = new Animator(400,ps);
         exitController.setResolution(10);
         exitController.setRepeatBehavior(Animator.RepeatBehavior.LOOP);
         exitController.addTarget(new TimingTarget() {
