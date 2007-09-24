@@ -14,12 +14,14 @@ import java.awt.Stroke;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
+
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JScrollBar;
 import javax.swing.plaf.metal.MetalScrollBarUI;
 
 public class AerithScrollbarUI extends MetalScrollBarUI {
+		
     @Override
     public void installUI(JComponent c) {
         super.installUI(c);
@@ -70,6 +72,11 @@ public class AerithScrollbarUI extends MetalScrollBarUI {
             g2.drawLine(width, 0, width, height);
             g2.drawLine(width + 1, 0, width + 1, height);
             
+            RoundRectangle2D roundCasing = new RoundRectangle2D.Double(0, 2, width, height - 4, width, width);
+            Area area = new Area(casing);
+            area.subtract(new Area(roundCasing));
+            g2.fill(area);
+            
             g2.translate(-trackBounds.x - 2, -trackBounds.y);
         } else {
             int width = trackBounds.width;
@@ -112,27 +119,22 @@ public class AerithScrollbarUI extends MetalScrollBarUI {
             RenderingHints.VALUE_ANTIALIAS_ON);
         
         if (scrollbar.getOrientation() == JScrollBar.VERTICAL) {
-            g2.translate(thumbBounds.x + 1, thumbBounds.y + 2);
+        	g2.translate(thumbBounds.x + 1, thumbBounds.y + 2);
             
             int width = thumbBounds.width - 3;
             int height = thumbBounds.height - 4;
             
             RoundRectangle2D casing = new RoundRectangle2D.Double(0, 0, width, height, width, width);
             g2.setColor(Color.WHITE);
-            
-            float alpha = 0.7f;
-            Composite composite = g2.getComposite();
-            if (composite instanceof AlphaComposite) {
-                alpha *= ((AlphaComposite) composite).getAlpha();
-            }
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            Paint paint = g2.getPaint();
+            g2.setPaint(new GradientPaint(0, 0, new Color(0x818a9b), 0, height, new Color(0x3a4252)));            
             g2.fill(casing);
-            g2.setComposite(composite);
-            
+            g2.setPaint(paint);
+          
             Stroke stroke = g2.getStroke();
             g2.setStroke(new BasicStroke(2.0f));
             g2.draw(casing);
-            g2.setStroke(stroke);
+            g2.setStroke(stroke);            
             
             g2.translate(-thumbBounds.x - 1, -thumbBounds.y - 2);
         } else {
