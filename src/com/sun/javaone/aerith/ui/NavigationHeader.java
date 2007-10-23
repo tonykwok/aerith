@@ -18,16 +18,13 @@ import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.awt.image.BufferedImage;
 import java.util.Stack;
+
 import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
 import org.jdesktop.fuse.InjectedResource;
 import org.jdesktop.fuse.ResourceInjector;
@@ -289,18 +286,14 @@ class NavigationHeader extends JComponent {
         }
 
         private final class HiglightHandler extends MouseAdapter {
-            private TimingController timer;
-            private Cycle cycle = new Cycle(300, 1000 / 30);
-            private Envelope envelope = new Envelope(1, 0,
-                                                     RepeatBehavior.FORWARD,
-                                                     EndBehavior.HOLD);
-
+            private Animator timer;
+            
             @Override
             public void mouseEntered(MouseEvent e) {
                 if (timer != null && timer.isRunning()) {
                     timer.stop();
                 }
-                timer = new TimingController(cycle, envelope, new AnimateGhost(true));
+                timer = new Animator(300, new AnimateGhost(true));
                 timer.start();
             }
 
@@ -309,7 +302,7 @@ class NavigationHeader extends JComponent {
                 if (timer != null && timer.isRunning()) {
                     timer.stop();
                 }
-                timer = new TimingController(cycle, envelope, new AnimateGhost(false));
+                timer = new Animator(300, new AnimateGhost(false));
                 timer.start();
             }
         }
@@ -323,9 +316,10 @@ class NavigationHeader extends JComponent {
                 oldValue = ghostValue;
             }
 
-            public void timingEvent(long cycleElapsedTime,
-                                    long totalElapsedTime,
-                                    float fraction) {
+            public void repeat() {            	
+            }
+            
+            public void timingEvent(float fraction) {
                 ghostValue = oldValue + fraction * (forward ? 1.0f : -1.0f);
 
                 if (ghostValue > 1.0f) {

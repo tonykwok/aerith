@@ -1,6 +1,5 @@
 package com.sun.javaone.aerith.ui;
 
-import com.sun.javaone.aerith.g2d.GraphicsUtil;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Composite;
@@ -17,22 +16,23 @@ import java.awt.event.MouseEvent;
 import java.awt.font.TextLayout;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonModel;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.basic.BasicButtonUI;
 
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
+import org.jdesktop.animation.timing.Animator.EndBehavior;
+import org.jdesktop.animation.timing.Animator.RepeatBehavior;
 import org.jdesktop.fuse.InjectedResource;
 import org.jdesktop.fuse.ResourceInjector;
+
+import com.sun.javaone.aerith.g2d.GraphicsUtil;
+import com.sun.xml.internal.messaging.saaj.soap.Envelope;
 
 /**
  *
@@ -198,18 +198,14 @@ public class ActionButton extends JButton {
     }
     
     private final class HiglightHandler extends MouseAdapter {
-        private TimingController timer;
-        private Cycle cycle = new Cycle(300, 1000 / 30);
-        private Envelope envelope = new Envelope(1, 0,
-                RepeatBehavior.FORWARD,
-                EndBehavior.HOLD);
+        private Animator timer;
         
         @Override
         public void mouseEntered(MouseEvent e) {
             if (timer != null && timer.isRunning()) {
                 timer.stop();
             }
-            timer = new TimingController(cycle, envelope, new AnimateGhost(true));
+            timer = new Animator(300, new AnimateGhost(true));
             timer.start();
         }
         
@@ -218,7 +214,7 @@ public class ActionButton extends JButton {
             if (timer != null && timer.isRunning()) {
                 timer.stop();
             }
-            timer = new TimingController(cycle, envelope, new AnimateGhost(false));
+            timer = new Animator(300, new AnimateGhost(false));
             timer.start();
         }
     }
@@ -232,9 +228,7 @@ public class ActionButton extends JButton {
             oldValue = ghostValue;
         }
         
-        public void timingEvent(long cycleElapsedTime,
-                long totalElapsedTime,
-                float fraction) {
+        public void timingEvent(float fraction) {
             ghostValue = oldValue + fraction * (forward ? 1.0f : -1.0f);
             
             if (ghostValue > 1.0f) {
@@ -250,6 +244,8 @@ public class ActionButton extends JButton {
         }
         
         public void end() {
+        }
+        public void repeat(){        	
         }
     }
 }

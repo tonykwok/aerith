@@ -1,6 +1,27 @@
 package com.sun.javaone.aerith.ui;
 
-import java.awt.*;
+import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Composite;
+import java.awt.Desktop;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.LayoutManager2;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.Stroke;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.font.TextLayout;
@@ -14,6 +35,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -32,23 +54,19 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
-import com.aetrion.flickr.people.User;
-import com.aetrion.flickr.photosets.Photoset;
-import com.sun.javaone.aerith.g2d.ShadowFactory;
-import com.sun.javaone.aerith.g2d.GraphicsUtil;
-import com.sun.javaone.aerith.util.Bundles;
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
-import org.jdesktop.animation.timing.interpolation.ObjectModifier;
-import org.jdesktop.animation.timing.interpolation.PropertyRange;
+import org.jdesktop.animation.timing.interpolation.PropertySetter;
 import org.jdesktop.fuse.InjectedResource;
 import org.jdesktop.fuse.ResourceInjector;
 import org.jdesktop.swingx.JXPanel;
 import org.jdesktop.swingx.util.SwingWorker;
+
+import com.aetrion.flickr.people.User;
+import com.aetrion.flickr.photosets.Photoset;
+import com.sun.javaone.aerith.g2d.GraphicsUtil;
+import com.sun.javaone.aerith.g2d.ShadowFactory;
+import com.sun.javaone.aerith.util.Bundles;
 
 // TODO: when scrolling, always select the first or last element in the view
 
@@ -369,7 +387,7 @@ public class AlbumSelector extends JPanel {
         private ShadowFactory factory;
         private Screenshot currentScreenshot;
         private JXPanel head, description;
-        private TimingController timer = null;
+        private Animator timer = null;
 
         private AlbumDetails() {
             setOpaque(false);
@@ -433,17 +451,8 @@ public class AlbumSelector extends JPanel {
         private void startFadeOut(final Runnable action) {
             if (timer != null && timer.isRunning()) {
                 timer.stop();
-            }
-
-            Cycle cycle = new Cycle(400, 10);
-            Envelope envelope = new Envelope(1, 0,
-                                             RepeatBehavior.FORWARD,
-                                             EndBehavior.HOLD);
-            //PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("fade", 1.0f, 0.0f);
-            PropertyRange alphaRange = PropertyRange.createPropertyRangeFloat("alpha", 1.0f, 0.01f);
-            timer = new TimingController(cycle, envelope,
-                                         new ObjectModifier(head, alphaRange));
-            timer.addTarget(new ObjectModifier(description, alphaRange));
+            }            
+            timer = PropertySetter.createAnimator(400,head,"alpha",1.0f, 0.01f);
             timer.addTarget(new TimingTarget() {
                 public void end() {
                     action.run();
@@ -453,7 +462,10 @@ public class AlbumSelector extends JPanel {
                 public void begin() {
                 }
 
-                public void timingEvent(long arg0, long arg1, float arg2) {
+                public void timingEvent(float arg2) {
+                }
+                public void repeat() {
+                	
                 }
             });
             timer.setAcceleration(0.7f);
@@ -465,15 +477,7 @@ public class AlbumSelector extends JPanel {
             if (timer != null && timer.isRunning()) {
                 timer.stop();
             }
-
-            Cycle cycle = new Cycle(400, 10);
-            Envelope envelope = new Envelope(1, 0,
-                                             RepeatBehavior.FORWARD,
-                                             EndBehavior.HOLD);
-            PropertyRange alphaRange = PropertyRange.createPropertyRangeFloat("alpha", 0.01f, 1.0f);
-            timer = new TimingController(cycle, envelope,
-                                         new ObjectModifier(head, alphaRange));
-            timer.addTarget(new ObjectModifier(description, alphaRange));
+            timer = PropertySetter.createAnimator(400,head,"alpha",0.01f, 1.0f);
             timer.setAcceleration(0.7f);
             timer.setDeceleration(0.3f);
             timer.start();
@@ -703,7 +707,7 @@ public class AlbumSelector extends JPanel {
             private float fade = 0.0f;
             private Image image = null;
             private String text;
-            private TimingController timer;
+            private Animator timer;
 
             private Screenshot(URL imageUrl) {
                 this.text = Bundles.getMessage(getClass(), "TXT_LoadingPicture");
@@ -756,13 +760,7 @@ public class AlbumSelector extends JPanel {
                     timer.stop();
                 }
 
-                Cycle cycle = new Cycle(500, 10);
-                Envelope envelope = new Envelope(1, 0,
-                                                 RepeatBehavior.FORWARD,
-                                                 EndBehavior.HOLD);
-                PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("fade", fade, 1.0f);
-                timer = new TimingController(cycle, envelope,
-                                             new ObjectModifier(Screenshot.this, fadeRange));
+                timer = PropertySetter.createAnimator(500, Screenshot.this, "fade",  fade, 1.0f );
                 timer.setAcceleration(0.7f);
                 timer.setDeceleration(0.3f);
                 timer.start();
@@ -773,13 +771,7 @@ public class AlbumSelector extends JPanel {
                     timer.stop();
                 }
 
-                Cycle cycle = new Cycle(500, 10);
-                Envelope envelope = new Envelope(1, 0,
-                                                 RepeatBehavior.FORWARD,
-                                                 EndBehavior.HOLD);
-                PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("fade", fade, 0.0f);
-                timer = new TimingController(cycle, envelope,
-                                             new ObjectModifier(Screenshot.this, fadeRange));
+                timer = PropertySetter.createAnimator(500, Screenshot.this, "fade", fade, 0.0f );
                 timer.setAcceleration(0.7f);
                 timer.setDeceleration(0.3f);
                 timer.start();

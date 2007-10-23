@@ -15,6 +15,7 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -25,19 +26,15 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.CompoundBorder;
 
-import com.sun.javaone.aerith.util.Bundles;
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
-import org.jdesktop.animation.timing.interpolation.ObjectModifier;
-import org.jdesktop.animation.timing.interpolation.PropertyRange;
+import org.jdesktop.animation.timing.interpolation.PropertySetter;
 import org.jdesktop.fuse.InjectedResource;
 import org.jdesktop.fuse.ResourceInjector;
 import org.jdesktop.swingx.JXPanel;
 import org.jdesktop.swingx.painter.Painter;
+
+import com.sun.javaone.aerith.util.Bundles;
 
 public class LoginOverlay extends JComponent implements ActionListener {
     @InjectedResource
@@ -172,22 +169,19 @@ public class LoginOverlay extends JComponent implements ActionListener {
     }
 
     private void startBlackFadeIn() {
-        Cycle cycle = new Cycle(1200, 10);
-        Envelope envelope = new Envelope(1, 0,
-                                         RepeatBehavior.FORWARD,
-                                         EndBehavior.HOLD);
-        PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("blackAlpha", 0.0f, 1.0f);
-        TimingController timer = new TimingController(cycle, envelope,
-                                                      new ObjectModifier(this, fadeRange));
+        Animator timer = PropertySetter.createAnimator(1200, this,"blackAlpha",0.0f, 1.0f);
         timer.addTarget(new TimingTarget() {
-            public void end() {
+            public void repeat() {
+            	
+            }
+        	public void end() {
                 startFadeIn();
             }
 
             public void begin() {
             }
 
-            public void timingEvent(long arg0, long arg1, float arg2) {
+            public void timingEvent(float arg2) {
             }
         });
         timer.setAcceleration(0.7f);
@@ -196,13 +190,7 @@ public class LoginOverlay extends JComponent implements ActionListener {
     }
 
     private void startFadeIn() {
-        Cycle cycle = new Cycle(2000, 10);
-        Envelope envelope = new Envelope(1, 0,
-                                         RepeatBehavior.FORWARD,
-                                         EndBehavior.HOLD);
-        PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("alpha", 0.001f, 1.0f);
-        TimingController timer = new TimingController(cycle, envelope,
-                                                      new ObjectModifier(panel, fadeRange));
+        Animator timer = PropertySetter.createAnimator(2000, panel,"alpha", 0.001f, 1.0f);
         timer.addTarget(new TimingTarget() {
             public void end() {
                 SwingUtilities.invokeLater(new Runnable() {
@@ -215,7 +203,9 @@ public class LoginOverlay extends JComponent implements ActionListener {
             public void begin() {
             }
 
-            public void timingEvent(long arg0, long arg1, float arg2) {
+            public void timingEvent(float arg2) {
+            }
+            public void repeat() {            	
             }
         });
         timer.setAcceleration(0.7f);
@@ -223,14 +213,8 @@ public class LoginOverlay extends JComponent implements ActionListener {
         timer.start();
     }
 
-    private void startFadeOut() {
-        Cycle cycle = new Cycle(1200, 10);
-        Envelope envelope = new Envelope(1, 0,
-                                         RepeatBehavior.FORWARD,
-                                         EndBehavior.HOLD);
-        PropertyRange fadeRange = PropertyRange.createPropertyRangeFloat("alpha", 1.0f, 0.0f);
-        TimingController timer = new TimingController(cycle, envelope,
-                                                      new ObjectModifier(panel, fadeRange));
+    private void startFadeOut() {        
+        Animator timer = PropertySetter.createAnimator(1200,panel,"alpha", 1.0f,0.0f);
         timer.addTarget(new TimingTarget() {
             public void end() {
                 TransitionManager.showWaitOverlay();
@@ -239,7 +223,9 @@ public class LoginOverlay extends JComponent implements ActionListener {
             public void begin() {
             }
         
-            public void timingEvent(long arg0, long arg1, float arg2) {
+            public void timingEvent(float arg2) {
+            }
+            public void repeat() {            	
             }
         });
         timer.setAcceleration(0.7f);

@@ -6,11 +6,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+
 import javax.swing.JComponent;
 
-import com.sun.animation.effects.ComponentState;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
+
+import com.sun.animation.effects.ComponentState;
 
 /**
  * This class is used to facilitate animated transitions in an application.
@@ -116,7 +118,7 @@ public class ScreenTransition implements TimingTarget {
     /**
      * Timing engine for the transition animation.
      */
-    private TimingController timingController;
+    private Animator timingController;
 
     /**
      * Constructor for ScreenTransition.  The application must supply the
@@ -169,8 +171,7 @@ public class ScreenTransition implements TimingTarget {
      * animation fraction in the AnimationManager and then force a repaint,
      * which will force the current transition state to be rendered.
      */
-    public void timingEvent(long cycleTime, long envelopeTime,
-                            float elapsedFraction)
+    public void timingEvent(float elapsedFraction)
     {
         Graphics2D gImg = (Graphics2D)transitionImage.getGraphics();
 
@@ -316,11 +317,15 @@ public class ScreenTransition implements TimingTarget {
         
         // workaround: need glass pane to reflect initial contents when we
         // exit this function to avoid flash of blank container
-        timingEvent(0, 0, 0);
+        timingEvent(0);
         
         // Create the TimingController that will run the animation
-	timingController = new TimingController(transitionTimeMS, this);
+	timingController = new Animator(transitionTimeMS, this);
 	timingController.start();
     }
+
+	public void repeat() {
+		
+	}
 }
 

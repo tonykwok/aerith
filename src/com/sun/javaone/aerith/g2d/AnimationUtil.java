@@ -9,16 +9,15 @@
 
 package com.sun.javaone.aerith.g2d;
 
-import org.jdesktop.animation.timing.Cycle;
-import org.jdesktop.animation.timing.Envelope;
-import org.jdesktop.animation.timing.Envelope.EndBehavior;
-import org.jdesktop.animation.timing.Envelope.RepeatBehavior;
-import org.jdesktop.animation.timing.TimingController;
+import org.jdesktop.animation.timing.Animator;
+import org.jdesktop.animation.timing.Animator.EndBehavior;
+import org.jdesktop.animation.timing.Animator.RepeatBehavior;
 import org.jdesktop.animation.timing.interpolation.KeyFrames;
 import org.jdesktop.animation.timing.interpolation.KeyValues;
-import org.jdesktop.animation.timing.interpolation.ObjectModifier;
-import org.jdesktop.animation.timing.interpolation.PropertyRange;
+import org.jdesktop.animation.timing.interpolation.PropertySetter;
 import org.jdesktop.swingx.JXPanel;
+
+import com.sun.xml.internal.messaging.saaj.soap.Envelope;
 
 /**
  *
@@ -30,21 +29,16 @@ public final class AnimationUtil {
     private AnimationUtil() {
     }
 
-    public static TimingController createFadeInAnimation(JXPanel panel) {
+    public static Animator createFadeInAnimation(JXPanel panel) {
         return createFadeAnimation(panel, 0.01f, .99f);
     }
 
-    public static TimingController createFadeOutAnimation(JXPanel panel) {
+    public static Animator createFadeOutAnimation(JXPanel panel) {
         return createFadeAnimation(panel, 0.99f, .01f);
     }
 
-    public static TimingController createFadeAnimation(JXPanel panel, float start, float end) {
-        Cycle cycle = new Cycle(400, 10);
-        Envelope envelope = new Envelope(1, 0, RepeatBehavior.FORWARD, EndBehavior.HOLD);
-        KeyValues keyValues = KeyValues.createKeyValues(new float[] { start, end });
-        KeyFrames keyFrames = new KeyFrames(keyValues);
-        PropertyRange range = new PropertyRange("alpha", keyFrames);
-        TimingController animator = new TimingController(cycle, envelope, new ObjectModifier(panel, range));
+    public static Animator createFadeAnimation(JXPanel panel, float start, float end) {
+        Animator animator = PropertySetter.createAnimator(400,panel,"alpha",start,end);
         animator.setAcceleration(0.7f);
         animator.setDeceleration(0.3f);
         return animator;
